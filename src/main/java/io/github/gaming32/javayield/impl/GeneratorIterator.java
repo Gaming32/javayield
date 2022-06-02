@@ -4,14 +4,14 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
-public final class SupplierIterator<E> implements Iterator<E> {
+public final class GeneratorIterator<E> implements Iterator<E> {
     public static final Object $COMPLETE = new Object();
 
-    private final Supplier<E> fn;
+    private final Supplier<Object> fn;
     private boolean valueReady;
-    private E next;
+    private Object next;
 
-    public SupplierIterator(Supplier<E> fn) {
+    public GeneratorIterator(Supplier<Object> fn) {
         this.fn = fn;
     }
 
@@ -27,18 +27,23 @@ public final class SupplierIterator<E> implements Iterator<E> {
     @Override
     public E next() {
         if (!valueReady) {
+            next = fn.get();
             if (next == $COMPLETE) {
                 throw new NoSuchElementException();
             }
-            next = fn.get();
         }
-        E value = next;
+        @SuppressWarnings("unchecked")
+        E value = (E)next;
         valueReady = false;
         next = null;
         return value;
     }
 
-    public static <E> Iterable<E> $createGenerator(Supplier<E> gen) {
-        return new IterableFromIterator<>(new SupplierIterator<>(gen));
+    public static <E> Iterator<E> $createIteratorGenerator(Supplier<Object> gen) {
+        return new GeneratorIterator<>(gen);
+    }
+
+    public static <E> Iterable<E> $createIterableGenerator(Supplier<Object> gen) {
+        return new IterableFromIterator<>(new GeneratorIterator<>(gen));
     }
 }
