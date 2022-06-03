@@ -26,4 +26,4 @@ jobs:
         if: ${{ matrix.java == 8 && matrix.os == 'ubuntu-latest' }}
         with:
           name: java-yield-jar-artifact
-          path: target/java-yield-*.jar
+          path: '**/target/javayield-*.jar'
