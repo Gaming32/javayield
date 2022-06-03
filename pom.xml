@@ -9,7 +9,7 @@
   <version>1.0-SNAPSHOT</version>
 
   <name>java-yield</name>
-  <url>https://github.com/Gaming32/TODO</url>
+  <url>https://github.com/Gaming32/java-yield</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -27,12 +27,6 @@
       <artifactId>asm-tree</artifactId>
       <version>9.3</version>
       <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>com.github.bsideup.jabel</groupId>
-      <artifactId>jabel-javac-plugin</artifactId>
-      <version>0.4.1</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.ow2.asm</groupId>
@@ -55,14 +49,8 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.8.1</version>
         <configuration>
-          <!-- Make sure we're not using Java 9+ APIs -->
-          <!-- <release>8</release> --> <!-- Uncomment this if it works on your IDE -->
-          <source>18</source>
-          <target>18</target>
-          <!-- The following setting can be avoided on Java 14 and higher -->
-          <compilerArgs>
-            <arg>-Xplugin:jabel</arg>
-          </compilerArgs>
+          <source>1.8</source>
+          <target>1.8</target>
         </configuration>
       </plugin>
       <!-- <plugin>
