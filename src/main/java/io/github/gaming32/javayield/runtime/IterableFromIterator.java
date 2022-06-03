@@ -1,4 +1,4 @@
-package io.github.gaming32.javayield.impl;
+package io.github.gaming32.javayield.runtime;
 
 import java.util.Iterator;
 

@@ -174,7 +174,7 @@ public final class YieldTransformer {
         if (Type.getReturnType(method.desc).getInternalName().equals("java/lang/Iterable")) {
             method.visitMethodInsn(
                 Opcodes.INVOKESTATIC,
-                "io/github/gaming32/javayield/impl/GeneratorIterator",
+                "io/github/gaming32/javayield/runtime/GeneratorIterator",
                 "$createIterableGenerator",
                 "(Ljava/util/function/Supplier;)Ljava/lang/Iterable;",
                 false
@@ -182,7 +182,7 @@ public final class YieldTransformer {
         } else {
             method.visitMethodInsn(
                 Opcodes.INVOKESTATIC,
-                "io/github/gaming32/javayield/impl/GeneratorIterator",
+                "io/github/gaming32/javayield/runtime/GeneratorIterator",
                 "$createIteratorGenerator",
                 "(Ljava/util/function/Supplier;)Ljava/lang/Iterator;",
                 false
@@ -295,7 +295,7 @@ public final class YieldTransformer {
                     it.add(new InsnNode(Opcodes.IASTORE));
                     it.add(new FieldInsnNode(
                         Opcodes.GETSTATIC,
-                        "io/github/gaming32/javayield/impl/GeneratorIterator",
+                        "io/github/gaming32/javayield/runtime/GeneratorIterator",
                         "$COMPLETE",
                         "Ljava/lang/Object;"
                     ));
