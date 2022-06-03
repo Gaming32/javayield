@@ -21,9 +21,21 @@ jobs:
       - name: Build with Maven
         run: |
           mvn clean install -f pom.xml
-      - name: Upload artifact
+      - name: Upload api artifact
         uses: actions/upload-artifact@v2
         if: ${{ matrix.java == 8 && matrix.os == 'ubuntu-latest' }}
         with:
-          name: java-yield-jar-artifact
-          path: target/java-yield-*.jar
+          name: javayield-jar-artifact
+          path: api/target/javayield-api-*.jar
+      - name: Upload runtime artifact
+        uses: actions/upload-artifact@v2
+        if: ${{ matrix.java == 8 && matrix.os == 'ubuntu-latest' }}
+        with:
+          name: javayield-jar-artifact
+          path: runtime/target/javayield-runtime-*.jar
+      - name: Upload transform artifact
+        uses: actions/upload-artifact@v2
+        if: ${{ matrix.java == 8 && matrix.os == 'ubuntu-latest' }}
+        with:
+          name: javayield-jar-artifact
+          path: transform/target/javayield-transform-*.jar

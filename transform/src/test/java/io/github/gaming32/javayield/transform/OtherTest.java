@@ -1,4 +1,4 @@
-package io.github.gaming32.javayield;
+package io.github.gaming32.javayield.transform;
 
 import static io.github.gaming32.javayield.api.Yield.yieldAll;
 import static io.github.gaming32.javayield.api.Yield.yield_;
