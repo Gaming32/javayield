@@ -23,7 +23,7 @@ jobs:
           mvn clean install -f pom.xml
       - name: Upload api artifact
         uses: actions/upload-artifact@v2
-        if: ${{ matrix.java == 8 && matrix.os == 'ubuntu-latest' }}
+        if: ${{ matrix.java == 9 && matrix.os == 'ubuntu-latest' }}
         with:
           name: javayield-jar-artifact
           path: api/target/javayield-api-*.jar
