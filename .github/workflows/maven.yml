@@ -38,7 +38,7 @@ jobs:
         if: ${{ matrix.java == 9 && matrix.os == 'ubuntu-latest' }}
         with:
           name: javayield-jar-artifact
-          path: javac/target/javac-api-*.jar
+          path: javac/target/javayield-javac-*.jar
       - name: Upload runtime artifact
         uses: actions/upload-artifact@v2
         if: ${{ matrix.java == 9 && matrix.os == 'ubuntu-latest' }}
