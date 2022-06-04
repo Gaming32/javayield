@@ -6,12 +6,24 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Attach",
+            "request": "attach",
+            "hostName": "localhost",
+            "port": 58407
+        },
+        {
+            "type": "java",
             "name": "Test Javac Plugin",
             "request": "launch",
             "mainClass": "com.sun.tools.javac.Main",
-            // "mainClass": "io.github.gaming32.javayield.javac.JavayieldJavacPlugin",
             "projectName": "javayield-javac",
             "args": "-Xplugin:javayield Test.java"
+        },
+        {
+            "type": "java",
+            "name": "Launch Current File",
+            "request": "launch",
+            "mainClass": "${file}"
         }
     ]
 }

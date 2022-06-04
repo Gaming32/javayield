@@ -28,6 +28,7 @@
 
   <modules>
     <module>api</module>
+    <module>ecj</module>
     <module>javac</module>
     <module>runtime</module>
     <module>transform</module>

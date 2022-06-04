@@ -27,6 +27,12 @@ jobs:
         with:
           name: javayield-jar-artifact
           path: api/target/javayield-api-*.jar
+      - name: Upload ecj artifact
+        uses: actions/upload-artifact@v2
+        if: ${{ matrix.java == 9 && matrix.os == 'ubuntu-latest' }}
+        with:
+          name: javayield-jar-artifact
+          path: ecj/target/javayield-ecj-*.jar
       - name: Upload javac artifact
         uses: actions/upload-artifact@v2
         if: ${{ matrix.java == 9 && matrix.os == 'ubuntu-latest' }}
