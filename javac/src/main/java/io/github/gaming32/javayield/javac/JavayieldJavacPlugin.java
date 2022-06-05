@@ -92,6 +92,10 @@ public class JavayieldJavacPlugin implements Plugin {
         final Trees trees = Trees.instance(task);
         task.addTaskListener(new TaskListener() {
             @Override
+            public void started(TaskEvent e) {
+            }
+
+            @Override
             public void finished(TaskEvent e) {
                 if (e.getKind() != TaskEvent.Kind.GENERATE) return;
                 final byte[] input;
