@@ -1,10 +1,7 @@
 package io.github.gaming32.javayield.transform;
 
-import java.io.IOException;
 import java.io.PrintWriter;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -14,15 +11,32 @@ import org.objectweb.asm.util.CheckClassAdapter;
 
 public class TransformTest {
     @Test
-    public void transformationTest() throws IOException, URISyntaxException, NoSuchMethodException, SecurityException, IllegalAccessException, InvocationTargetException {
+    public void transformationTest() throws Exception {
+        Class<?> testClass = testSingle("OtherTest"); {
+            final Method testMethod = testClass.getDeclaredMethod("generatorTest", int.class);
+            @SuppressWarnings("unchecked")
+            final Iterable<Integer> testIterable = (Iterable<Integer>)testMethod.invoke(null, 1);
+            for (final int testI : testIterable) {
+                System.out.println(testI);
+            }
+        }
+
+        testClass = testSingle("JavayieldIjTest"); {
+            final Method mainMethod = testClass.getDeclaredMethod("main", String[].class);
+            mainMethod.invoke(null, new Object[] { new String[0] });
+        }
+    }
+
+    private Class<?> testSingle(String className) throws Exception {
         byte[] testFile = Files.readAllBytes(
             Paths.get(
-                TransformTest.class.getResource("OtherTest.class").toURI()
+                TransformTest.class.getResource(className + ".class").toURI()
             )
         );
         byte[] transformed = YieldTransformer.transformClass(testFile);
         if (transformed == null) {
             System.out.println("**Not transformed**");
+            return null;
         } else {
             // try (OutputStream os = new FileOutputStream("io/github/gaming32/javayield/OtherTest.class")) {
             //     os.write(transformed);
@@ -31,17 +45,11 @@ public class TransformTest {
             CheckClassAdapter.verify(reader, true, new PrintWriter(System.out));
             // reader.accept(new TraceClassVisitor(new PrintWriter(System.out)), 0);
 
-            final Class<?> testClass = new ClassLoader() {
+            return new ClassLoader() {
                 public Class<?> loadClassFromBytecode(String name, byte[] bytecode) {
                     return super.defineClass(name, bytecode, 0, bytecode.length);
                 }
-            }.loadClassFromBytecode("io.github.gaming32.javayield.transform.OtherTest", transformed);
-            final Method testMethod = testClass.getDeclaredMethod("generatorTest", int.class);
-            @SuppressWarnings("unchecked")
-            final Iterable<Integer> testIterable = (Iterable<Integer>)testMethod.invoke(null, 1);
-            for (final int testI : testIterable) {
-                System.out.println(testI);
-            }
+            }.loadClassFromBytecode("io.github.gaming32.javayield.transform." + className, transformed);
         }
     }
 }

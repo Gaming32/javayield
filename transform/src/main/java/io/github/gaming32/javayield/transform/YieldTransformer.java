@@ -125,7 +125,7 @@ public final class YieldTransformer {
                 if (descriptor.length() == 1) {
                     method.visitIntInsn(Opcodes.NEWARRAY, getPrimitiveIdentifer(descriptor));
                 } else {
-                    method.visitTypeInsn(Opcodes.ANEWARRAY, varTypes[i].getInternalName());
+                    method.visitTypeInsn(Opcodes.ANEWARRAY, argTypes[i].getInternalName());
                 }
                 method.visitInsn(Opcodes.DUP);
                 iconst(method, 0);
