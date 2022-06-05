@@ -1,5 +1,7 @@
 # Javayield
 
+Javayield is a library that adds generator functions to Java.
+
 ## Setup
 
 ### Maven
