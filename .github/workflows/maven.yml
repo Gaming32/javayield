@@ -6,7 +6,7 @@ jobs:
     strategy:
       matrix:
         # Use these Java versions
-        java: [9, 11, 17, 18]
+        java: [8, 9, 11, 17, 18]
         # and run on both Linux and Windows
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
@@ -19,35 +19,40 @@ jobs:
           java-version: ${{ matrix.java }}
           distribution: zulu
       - name: Build with Maven
+        if: matrix.java != 8
         run: |
           mvn clean install -f pom.xml
+      - name: Build with Maven w/o ecj
+        if: matrix.java == 8
+        run: |
+          mvn clean install -f pom.xml -pl !ecj
       - name: Upload api artifact
         uses: actions/upload-artifact@v2
-        if: ${{ matrix.java == 9 && matrix.os == 'ubuntu-latest' }}
+        if: matrix.java == 8 && matrix.os == 'ubuntu-latest'
         with:
           name: javayield-jar-artifact
           path: api/target/javayield-api-*.jar
       - name: Upload ecj artifact
         uses: actions/upload-artifact@v2
-        if: ${{ matrix.java == 9 && matrix.os == 'ubuntu-latest' }}
+        if: matrix.java == 9 && matrix.os == 'ubuntu-latest'
         with:
           name: javayield-jar-artifact
           path: ecj/target/javayield-ecj-*.jar
       - name: Upload javac artifact
         uses: actions/upload-artifact@v2
-        if: ${{ matrix.java == 9 && matrix.os == 'ubuntu-latest' }}
+        if: matrix.java == 8 && matrix.os == 'ubuntu-latest'
         with:
           name: javayield-jar-artifact
           path: javac/target/javayield-javac-*.jar
       - name: Upload runtime artifact
         uses: actions/upload-artifact@v2
-        if: ${{ matrix.java == 9 && matrix.os == 'ubuntu-latest' }}
+        if: matrix.java == 8 && matrix.os == 'ubuntu-latest'
         with:
           name: javayield-jar-artifact
           path: runtime/target/javayield-runtime-*.jar
       - name: Upload transform artifact
         uses: actions/upload-artifact@v2
-        if: ${{ matrix.java == 9 && matrix.os == 'ubuntu-latest' }}
+        if: matrix.java == 8 && matrix.os == 'ubuntu-latest'
         with:
           name: javayield-jar-artifact
           path: transform/target/javayield-transform-*.jar
