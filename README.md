@@ -6,42 +6,63 @@ Javayield is a library that adds generator functions to Java.
 
 ### Maven
 
-Simply add this to the dependencies section of your `pom.xml`:
+Simply add this to your `pom.xml`:
 
 ```xml
-<dependency>
-  <groupId>io.github.gaming32.javayield</groupId>
-  <artifactId>javayield-javac</artifactId>
-  <version>1.0-SNAPSHOT</version>
-  <scope>provided</scope>
-</dependency>
-<dependency>
-  <groupId>io.github.gaming32.javayield</groupId>
-  <artifactId>javayield-runtime</artifactId>
-  <version>1.0-SNAPSHOT</version>
-</dependency>
+<dependencies>
+  <dependency>
+    <groupId>io.github.gaming32.javayield</groupId>
+    <artifactId>javayield-javac</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <scope>provided</scope>
+  </dependency>
+  <dependency>
+    <groupId>io.github.gaming32.javayield</groupId>
+    <artifactId>javayield-runtime</artifactId>
+    <version>1.0-SNAPSHOT</version>
+  </dependency>
+</dependencies>
+
+<build>
+  <plugins>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId>
+      <artifactId>maven-compiler-plugin</artifactId>
+      <version>3.8.1</version>
+      <configuration>
+        <compilerArgs>
+          <compilerArg>-Xplugin:javayield</compilerArg>
+        </compilerArgs>
+      </configuration>
+    </plugin>
+  </plugins>
+</build>
 ```
 
-And this to the plugins section of your `pom.xml`:
+### Gradle
 
-```xml
-<plugin>
-  <groupId>org.apache.maven.plugins</groupId>
-  <artifactId>maven-compiler-plugin</artifactId>
-  <version>3.8.1</version>
-  <configuration>
-    <compilerArgs>
-      <compilerArg>-Xplugin:javayield</compilerArg>
-    </compilerArgs>
-  </configuration>
-</plugin>
+**Currently Gradle support doesn't work for some reason. We are investigating the issue.**
+
+<!--
+```gradle
+dependencies {
+    compileOnly('io.github.gaming32.javayield:javayield-javac:1.0-SNAPSHOT') {
+        transitive = false
+    }
+    implementation 'io.github.gaming32.javayield:javayield-runtime:1.0-SNAPSHOT'
+}
+
+compileJava {
+    options.compilerArgs += ['-Xplugin:javayield']
+}
 ```
+-->
 
 ### IntelliJ
 
 #### With Javac compiler (the default)
 
-You're all set up! IntelliJ reads the `compilerArgs` from your `pom.xml` and configures itself automatically.
+You're all set up! IntelliJ reads the `compilerArgs` from your build tool and configures itself automatically.
 
 #### With ECJ compiler
 
