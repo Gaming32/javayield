@@ -1,5 +1,6 @@
 package io.github.gaming32.javayield.javac;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -100,7 +101,13 @@ public class JavayieldJavacPlugin implements Plugin {
                 if (e.getKind() != TaskEvent.Kind.GENERATE) return;
                 final byte[] input;
                 try (InputStream is = LastClassFileHolder.lastClassFile.openInputStream()) {
-                    input = is.readAllBytes();
+                    final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    final byte[] buffer = new byte[8192];
+                    int n;
+                    while ((n = is.read(buffer)) != -1) {
+                        baos.write(buffer, 0, n);
+                    }
+                    input = baos.toByteArray();
                 } catch (Exception e1) {
                     trees.printMessage(
                         Diagnostic.Kind.ERROR, "Failed to read class file: " + e1,
