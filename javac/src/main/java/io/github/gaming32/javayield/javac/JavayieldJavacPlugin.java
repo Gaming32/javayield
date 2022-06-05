@@ -1,5 +1,6 @@
 package io.github.gaming32.javayield.javac;
 
+import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.instrument.ClassFileTransformer;
@@ -7,9 +8,9 @@ import java.lang.instrument.IllegalClassFormatException;
 import java.lang.instrument.Instrumentation;
 import java.security.ProtectionDomain;
 import java.util.ListIterator;
+import java.util.jar.JarFile;
 
 import javax.tools.Diagnostic;
-import javax.tools.JavaFileObject;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -31,8 +32,6 @@ import io.github.gaming32.javayield.transform.YieldTransformer;
 import net.bytebuddy.agent.ByteBuddyAgent;
 
 public class JavayieldJavacPlugin implements Plugin {
-    public static JavaFileObject lastClassFile;
-
     @Override
     public String getName() {
         return "javayield";
@@ -48,47 +47,47 @@ public class JavayieldJavacPlugin implements Plugin {
                 if (!className.equals("com/sun/tools/javac/main/JavaCompiler")) {
                     return null;
                 }
-                final ClassNode clazz = new ClassNode();
-                new ClassReader(classfileBuffer).accept(clazz, 0);
-                for (final MethodNode method : clazz.methods) {
-                    if (
-                        method.name.equals("generate") &&
-                        method.desc.equals("(Ljava/util/Queue;Ljava/util/Queue;)V")
-                    ) {
-                        final ListIterator<AbstractInsnNode> it = method.instructions.iterator();
-                        while (it.hasNext()) {
-                            final AbstractInsnNode insn = it.next();
-                            if (insn instanceof MethodInsnNode) {
-                                final MethodInsnNode methodInsn = (MethodInsnNode)insn;
-                                if (
-                                    methodInsn.owner.equals("com/sun/tools/javac/main/JavaCompiler") &&
-                                    methodInsn.name.equals("genCode") &&
-                                    methodInsn.desc.equals("(Lcom/sun/tools/javac/comp/Env;Lcom/sun/tools/javac/tree/JCTree$JCClassDecl;)Ljavax/tools/JavaFileObject;")
-                                ) {
-                                    it.add(new InsnNode(Opcodes.DUP));
-                                    it.add(new FieldInsnNode(
-                                        Opcodes.PUTSTATIC,
-                                        "io/github/gaming32/javayield/javac/JavayieldJavacPlugin",
-                                        "lastClassFile",
-                                        "Ljavax/tools/JavaFileObject;"
-                                    ));
-                                    break;
+                try {
+                    final ClassNode clazz = new ClassNode();
+                    new ClassReader(classfileBuffer).accept(clazz, 0);
+                    for (final MethodNode method : clazz.methods) {
+                        if (
+                            method.name.equals("generate") &&
+                            method.desc.equals("(Ljava/util/Queue;Ljava/util/Queue;)V")
+                        ) {
+                            final ListIterator<AbstractInsnNode> it = method.instructions.iterator();
+                            while (it.hasNext()) {
+                                final AbstractInsnNode insn = it.next();
+                                if (insn instanceof MethodInsnNode) {
+                                    final MethodInsnNode methodInsn = (MethodInsnNode)insn;
+                                    if (
+                                        methodInsn.owner.equals("com/sun/tools/javac/main/JavaCompiler") &&
+                                        methodInsn.name.equals("genCode") &&
+                                        methodInsn.desc.equals("(Lcom/sun/tools/javac/comp/Env;Lcom/sun/tools/javac/tree/JCTree$JCClassDecl;)Ljavax/tools/JavaFileObject;")
+                                    ) {
+                                        it.add(new InsnNode(Opcodes.DUP));
+                                        it.add(new FieldInsnNode(
+                                            Opcodes.PUTSTATIC,
+                                            "io/github/gaming32/javayield/javac/LastClassFileHolder",
+                                            "lastClassFile",
+                                            "Ljavax/tools/JavaFileObject;"
+                                        ));
+                                        break;
+                                    }
                                 }
                             }
+                            break;
                         }
-                        break;
                     }
+                    final ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+                    clazz.accept(writer);
+                    return writer.toByteArray();
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                    throw t;
                 }
-                final ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-                clazz.accept(writer);
-                return writer.toByteArray();
             }
         }, true);
-        try {
-            inst.retransformClasses(Class.forName("com.sun.tools.javac.main.JavaCompiler"));
-        } catch (Exception e) {
-            throw new Error(e);
-        }
 
         final Trees trees = Trees.instance(task);
         task.addTaskListener(new TaskListener() {
@@ -96,22 +95,22 @@ public class JavayieldJavacPlugin implements Plugin {
             public void finished(TaskEvent e) {
                 if (e.getKind() != TaskEvent.Kind.GENERATE) return;
                 final byte[] input;
-                try (InputStream is = lastClassFile.openInputStream()) {
+                try (InputStream is = LastClassFileHolder.lastClassFile.openInputStream()) {
                     input = is.readAllBytes();
                 } catch (Exception e1) {
                     trees.printMessage(
-                        Diagnostic.Kind.ERROR, "Failed to read class file: " + e,
+                        Diagnostic.Kind.ERROR, "Failed to read class file: " + e1,
                         e.getCompilationUnit(), e.getCompilationUnit()
                     );
                     return;
                 }
                 final byte[] output = YieldTransformer.transformClass(input);
                 if (output != null) {
-                    try (OutputStream os = lastClassFile.openOutputStream()) {
+                    try (OutputStream os = LastClassFileHolder.lastClassFile.openOutputStream()) {
                         os.write(output);
                     } catch (Exception e1) {
                         trees.printMessage(
-                            Diagnostic.Kind.ERROR, "Failed to write class file: " + e,
+                            Diagnostic.Kind.ERROR, "Failed to write class file: " + e1,
                             e.getCompilationUnit(), e.getCompilationUnit()
                         );
                         return;
@@ -119,5 +118,14 @@ public class JavayieldJavacPlugin implements Plugin {
                 }
             }
         });
+
+        try {
+            inst.retransformClasses(Class.forName("com.sun.tools.javac.main.JavaCompiler"));
+            inst.appendToSystemClassLoaderSearch(new JarFile(
+                new File(getClass().getProtectionDomain().getCodeSource().getLocation().toURI())
+            ));
+        } catch (Exception e) {
+            throw new Error(e);
+        }
     }
 }

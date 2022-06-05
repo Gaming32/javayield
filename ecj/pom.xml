@@ -35,6 +35,12 @@
       <artifactId>javayield-transform</artifactId>
       <version>1.0-SNAPSHOT</version>
     </dependency>
+    <dependency>
+      <groupId>io.github.gaming32.javayield</groupId>
+      <artifactId>javayield-runtime</artifactId>
+      <version>1.0-SNAPSHOT</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>

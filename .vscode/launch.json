@@ -9,7 +9,8 @@
             "name": "Attach",
             "request": "attach",
             "hostName": "localhost",
-            "port": 58407
+            "port": 8000,
+            "projectName": "javayield-javac"
         },
         {
             "type": "java",
