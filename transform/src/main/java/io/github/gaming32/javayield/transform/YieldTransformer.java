@@ -137,7 +137,7 @@ public final class YieldTransformer {
         }
         final int varTypesEndOffset = hasYieldAll ? 2 : 1;
         for (int i = effectivelyFinal.length + argOffset; i < varTypes.length - varTypesEndOffset; i++) {
-            final String descriptor = argTypes[i].getDescriptor();
+            final String descriptor = varTypes[i].getDescriptor().substring(1); // Remove the [
             iconst(method, 1);
             if (descriptor.length() == 1) {
                 method.visitIntInsn(Opcodes.NEWARRAY, getPrimitiveIdentifer(descriptor));
@@ -374,7 +374,8 @@ public final class YieldTransformer {
             }
         }
         while (i < method.localVariables.size()) {
-            varTypes[i++] = Type.getType("[" + rewriteVariable(method, i, null).getDescriptor());
+            varTypes[i] = Type.getType("[" + rewriteVariable(method, i, null).getDescriptor());
+            i++;
         }
         varTypes[i++] = Type.getType("[I");
         return varTypes;
@@ -385,7 +386,8 @@ public final class YieldTransformer {
         if (varType == null) {
             varType = Type.getType(varNode.desc);
         }
-        ListIterator<AbstractInsnNode> it = method.instructions.iterator(method.instructions.indexOf(varNode.start));
+        final int index = method.instructions.indexOf(varNode.start);
+        ListIterator<AbstractInsnNode> it = method.instructions.iterator(index == 0 ? 0 : index - 1);
         while (it.hasNext()) {
             AbstractInsnNode insn = it.next();
             if (insn == varNode.end) {
