@@ -71,8 +71,14 @@ public final class YieldTransformer {
 
     private static void transformMethod(ClassNode classNode, MethodNode method) {
         final int lineNumber = getLineNumber(method.instructions.iterator());
+        final int argOffset;
+        if ((method.access & Opcodes.ACC_STATIC) == 0) {
+            argOffset = 1;
+        } else {
+            argOffset = 0;
+        }
         final Type[] argTypes = Type.getArgumentTypes(method.desc);
-        final boolean[] effectivelyFinal = effectivelyFinalArgs(method, argTypes);
+        final boolean[] effectivelyFinal = effectivelyFinalArgs(method, argOffset, argTypes);
         Type[] varTypes = calculateAndExpandLvt(classNode, method, effectivelyFinal, argTypes);
         final int yieldCountInfo = expandYieldAll(method);
         final boolean hasYieldAll = (yieldCountInfo & 1) != 0;
@@ -109,12 +115,8 @@ public final class YieldTransformer {
         if (lineNumber != -1) {
             method.visitLineNumber(lineNumber, start);
         }
-        final int argOffset;
-        if ((method.access & Opcodes.ACC_STATIC) == 0) {
-            method.visitVarInsn(Opcodes.ALOAD, 0);
-            argOffset = 1;
-        } else {
-            argOffset = 0;
+        for (int i = 0; i < argOffset; i++) {
+            method.visitVarInsn(Opcodes.ALOAD, i);
         }
         for (int i = 0; i < effectivelyFinal.length; i++) {
             if (effectivelyFinal[i]) {
@@ -340,10 +342,10 @@ public final class YieldTransformer {
         }
     }
 
-    private static boolean[] effectivelyFinalArgs(MethodNode method, Type[] argTypes) {
+    private static boolean[] effectivelyFinalArgs(MethodNode method, int argOffset, Type[] argTypes) {
         final boolean[] effectivelyFinal = new boolean[argTypes.length];
         for (int i = 0; i < argTypes.length; i++) {
-            effectivelyFinal[i] = isArgEffectivelyFinal(method, i);
+            effectivelyFinal[i] = isArgEffectivelyFinal(method, i + argOffset);
         }
         return effectivelyFinal;
     }
@@ -355,11 +357,15 @@ public final class YieldTransformer {
         // final Map<AbstractInsnNode, Integer> stackHeights = calculateStackHeights(method);
         final Type[] varTypes = new Type[method.localVariables.size() + 1];
         int i = 0;
+        final int argOffset;
         if ((method.access & Opcodes.ACC_STATIC) == 0) {
             varTypes[i++] = Type.getType("L" + classNode.name + ";");
+            argOffset = 1;
+        } else {
+            argOffset = 0;
         }
         for (final Type argType : argTypes) {
-            if (effectivelyFinal[i]) {
+            if (effectivelyFinal[i - argOffset]) {
                 // Final parameter doesn't need an array to mimic pass by reference, since it can't be changed
                 varTypes[i++] = argType;
             } else {

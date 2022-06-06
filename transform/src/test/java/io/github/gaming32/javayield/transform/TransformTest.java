@@ -15,7 +15,7 @@ public class TransformTest {
         Class<?> testClass = testSingle("OtherTest"); {
             final Method testMethod = testClass.getDeclaredMethod("generatorTest", int.class);
             @SuppressWarnings("unchecked")
-            final Iterable<Integer> testIterable = (Iterable<Integer>)testMethod.invoke(null, 1);
+            final Iterable<Integer> testIterable = (Iterable<Integer>)testMethod.invoke(testClass.newInstance(), 1);
             for (final int testI : testIterable) {
                 System.out.println(testI);
             }
