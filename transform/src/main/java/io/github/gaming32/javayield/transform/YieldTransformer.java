@@ -141,8 +141,10 @@ public final class YieldTransformer {
             iconst(method, 1);
             if (descriptor.length() == 1) {
                 method.visitIntInsn(Opcodes.NEWARRAY, getPrimitiveIdentifer(descriptor));
+            } else if (varTypes[i].getDimensions() > 1) {
+                method.visitTypeInsn(Opcodes.ANEWARRAY, descriptor);
             } else {
-                method.visitTypeInsn(Opcodes.ANEWARRAY, varTypes[i].getInternalName());
+                method.visitTypeInsn(Opcodes.ANEWARRAY, descriptor.substring(1, descriptor.length() - 1));
             }
         }
         iconst(method, 1);
@@ -455,6 +457,15 @@ public final class YieldTransformer {
                 it.add(newInsn);
                 // stackHeights.put(newInsn, oldStack);
             }
+        }
+        if (
+            varNode.end != method.instructions.getLast() &&
+            (varType.getSort() == Type.OBJECT || varType.getSort() == Type.ARRAY)
+        ) {
+            method.instructions.insertBefore(varNode.end, new VarInsnNode(Opcodes.ALOAD, varIndex));
+            method.instructions.insertBefore(varNode.end, iconst(0));
+            method.instructions.insertBefore(varNode.end, new InsnNode(Opcodes.ACONST_NULL));
+            method.instructions.insertBefore(varNode.end, new InsnNode(Opcodes.AASTORE));
         }
         return varType;
     }
