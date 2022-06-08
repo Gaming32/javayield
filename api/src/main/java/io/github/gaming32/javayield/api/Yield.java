@@ -2,6 +2,8 @@ package io.github.gaming32.javayield.api;
 
 import java.util.Iterator;
 
+import io.github.gaming32.javayield.runtime.GeneratorIterator;
+
 public final class Yield {
     private Yield() {
     }
@@ -11,14 +13,18 @@ public final class Yield {
     }
 
     public static <T> void yield_(T t) {
-        throw didntInstrument("yield");
+        throw didntInstrument("yield(T)");
     }
 
     public static <T> void yieldAll(Iterable<T> it) {
-        throw didntInstrument("yieldAll");
+        throw didntInstrument("yieldAll(Iterable<T>)");
     }
 
     public static <T> void yieldAll(Iterator<T> it) {
-        throw didntInstrument("yieldAll");
+        throw didntInstrument("yieldAll(Iterator<T>)");
+    }
+
+    public static <E, R> GeneratorIterator<E, R> result(R result) {
+        throw didntInstrument("result(R)");
     }
 }

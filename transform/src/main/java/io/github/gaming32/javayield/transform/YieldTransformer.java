@@ -178,17 +178,17 @@ public final class YieldTransformer {
         if (Type.getReturnType(method.desc).getInternalName().equals("java/lang/Iterable")) {
             method.visitMethodInsn(
                 Opcodes.INVOKESTATIC,
-                "io/github/gaming32/javayield/runtime/GeneratorIterator",
-                "$createIterableGenerator",
+                "io/github/gaming32/javayield/runtime/RawGenerators",
+                "createIterableGenerator",
                 "(Ljava/util/function/Supplier;)Ljava/lang/Iterable;",
                 false
             );
         } else {
             method.visitMethodInsn(
                 Opcodes.INVOKESTATIC,
-                "io/github/gaming32/javayield/runtime/GeneratorIterator",
-                "$createIteratorGenerator",
-                "(Ljava/util/function/Supplier;)Ljava/lang/Iterator;",
+                "io/github/gaming32/javayield/runtime/RawGenerators",
+                "createIteratorGenerator",
+                "(Ljava/util/function/Supplier;)Lio/github/gaming32/javayield/runtime/GeneratorIterator;",
                 false
             );
         }
@@ -289,23 +289,35 @@ public final class YieldTransformer {
             final AbstractInsnNode insn = it.next();
             if (insn.getOpcode() == Opcodes.ARETURN) {
                 it.remove(); // ARETURN
-                it.previous();
-                it.remove(); // ACONST_NULL
-                if (!returnVisited) {
-                    it.add(stateLabels[yieldCount + 1]);
+                if (it.previous().getOpcode() == Opcodes.ACONST_NULL) {
+                    it.remove(); // ACONST_NULL
+                    if (returnVisited) {
+                        it.add(new JumpInsnNode(Opcodes.GOTO, stateLabels[yieldCount + 1]));
+                    }
+                } else {
+                    it.remove(); // INVOKESTATIC io/github/gaming32/javayield/api/Yield.result
+                    it.add(new MethodInsnNode(
+                        Opcodes.INVOKESTATIC,
+                        "io/github/gaming32/javayield/runtime/RawGenerators",
+                        "complete",
+                        "(Ljava/lang/Object;)Lio/github/gaming32/javayield/runtime/CompletedGenerator;",
+                        false
+                    ));
                     it.add(new VarInsnNode(Opcodes.ALOAD, stateVarIndex));
                     it.add(iconst(0));
                     it.add(iconst(yieldCount + 1));
                     it.add(new InsnNode(Opcodes.IASTORE));
+                    it.add(new InsnNode(Opcodes.ARETURN));
+                }
+                if (!returnVisited) {
+                    it.add(stateLabels[yieldCount + 1]);
                     it.add(new FieldInsnNode(
                         Opcodes.GETSTATIC,
-                        "io/github/gaming32/javayield/runtime/GeneratorIterator",
-                        "$COMPLETE",
-                        "Ljava/lang/Object;"
+                        "io/github/gaming32/javayield/runtime/RawGenerators",
+                        "COMPLETE",
+                        "Lio/github/gaming32/javayield/runtime/CompletedGenerator;"
                     ));
                     it.add(new InsnNode(Opcodes.ARETURN));
-                } else {
-                    it.add(new JumpInsnNode(Opcodes.GOTO, stateLabels[yieldCount + 1]));
                 }
                 continue;
             }
@@ -726,21 +738,7 @@ public final class YieldTransformer {
             if (insn.getOpcode() == Opcodes.INVOKESTATIC) {
                 MethodInsnNode methodInsn = (MethodInsnNode)insn;
                 if (methodInsn.owner.equals("io/github/gaming32/javayield/api/Yield") && !methodInsn.itf) {
-                    if (
-                        methodInsn.name.equals("yield_") &&
-                        methodInsn.desc.equals("(Ljava/lang/Object;)V")
-                    ) {
-                        return true;
-                    }
-                    if (
-                        methodInsn.name.equals("yieldAll") &&
-                        (
-                            methodInsn.desc.equals("(Ljava/lang/Iterable;)V") ||
-                            methodInsn.desc.equals("(Ljava/util/Iterator;)V")
-                        )
-                    ) {
-                        return true;
-                    }
+                    return true;
                 }
             }
         }
@@ -751,21 +749,10 @@ public final class YieldTransformer {
         String returnType = method.desc.substring(method.desc.indexOf(')') + 1);
         if (
             !returnType.equals("Ljava/lang/Iterable;") &&
-            !returnType.equals("Ljava/util/Iterator;")
+            !returnType.equals("Ljava/util/Iterator;") &&
+            !returnType.equals("Lio/github/gaming32/javayield/runtime/GeneratorIterator;")
         ) {
             throw new IllegalArgumentException("Generator must return either java.lang.Iterable or java.util.Iterator");
-        }
-        ListIterator<AbstractInsnNode> it = method.instructions.iterator();
-        while (it.hasNext()) {
-            AbstractInsnNode insn = it.next();
-            if (insn.getOpcode() == Opcodes.ARETURN) {
-                it.previous();
-                if (it.previous().getOpcode() != Opcodes.ACONST_NULL) {
-                    throw new IllegalArgumentException("All returns in generator must be null returns");
-                }
-                it.next();
-                it.next();
-            }
         }
     }
 }

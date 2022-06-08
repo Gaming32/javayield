@@ -12,7 +12,7 @@ import org.objectweb.asm.util.CheckClassAdapter;
 public class TransformTest {
     @Test
     public void transformationTest() throws Exception {
-        Class<?> testClass = testSingle("OtherTest"); {
+        Class<?> testClass = testSingle("OtherTest", false); {
             final Method testMethod = testClass.getDeclaredMethod("generatorTest", int.class);
             @SuppressWarnings("unchecked")
             final Iterable<Integer> testIterable = (Iterable<Integer>)testMethod.invoke(testClass.newInstance(), 1);
@@ -21,13 +21,11 @@ public class TransformTest {
             }
         }
 
-        testClass = testSingle("JavayieldIjTest"); {
-            final Method mainMethod = testClass.getDeclaredMethod("main", String[].class);
-            mainMethod.invoke(null, new Object[] { new String[0] });
-        }
+        testClass = testSingle("JavayieldIjTest", true);
+        testClass = testSingle("ResultTest", true);
     }
 
-    private Class<?> testSingle(String className) throws Exception {
+    private Class<?> testSingle(String className, boolean mainClass) throws Exception {
         byte[] testFile = Files.readAllBytes(
             Paths.get(
                 TransformTest.class.getResource(className + ".class").toURI()
@@ -43,13 +41,18 @@ public class TransformTest {
             // }
             ClassReader reader = new ClassReader(transformed);
             CheckClassAdapter.verify(reader, true, new PrintWriter(System.out));
-            // reader.accept(new TraceClassVisitor(new PrintWriter(System.out)), 0);
+            // reader.accept(new TraceClassVisitor(new PrintWriter(System.out)), ClassReader.SKIP_FRAMES);
 
-            return new ClassLoader() {
+            Class<?> result = new ClassLoader() {
                 public Class<?> loadClassFromBytecode(String name, byte[] bytecode) {
                     return super.defineClass(name, bytecode, 0, bytecode.length);
                 }
             }.loadClassFromBytecode("io.github.gaming32.javayield.transform." + className, transformed);
+            if (mainClass) {
+                final Method mainMethod = result.getDeclaredMethod("main", String[].class);
+                mainMethod.invoke(null, new Object[] { new String[0] });
+            }
+            return result;
         }
     }
 }
