@@ -358,6 +358,7 @@ public final class YieldTransformer {
         }
         // final Map<AbstractInsnNode, Integer> stackHeights = calculateStackHeights(method);
         final Type[] varTypes = new Type[method.localVariables.size() + 1];
+        method.localVariables.sort((a, b) -> a.index - b.index);
         int i = 0;
         final int argOffset;
         if ((method.access & Opcodes.ACC_STATIC) == 0) {
