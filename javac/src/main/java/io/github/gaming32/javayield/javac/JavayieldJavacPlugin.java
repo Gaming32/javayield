@@ -9,9 +9,9 @@ import java.lang.reflect.Field;
 
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
-import javax.lang.model.element.ModuleElement;
 import javax.lang.model.element.Name;
 import javax.lang.model.element.PackageElement;
+import javax.lang.model.element.QualifiedNameable;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileManager;
@@ -85,11 +85,11 @@ public class JavayieldJavacPlugin implements Plugin {
                 }
                 final String name = nameObject.toString();
                 if (multiModuleMode) {
-                    final ModuleElement msym = classElement.getEnclosingElement().getKind() == MODULE
-                        ? (ModuleElement)classElement.getEnclosingElement()
-                        : (ModuleElement)getPackageElement(classElement).getEnclosingElement();
+                    final QualifiedNameable moduleElement = classElement.getEnclosingElement().getKind() == MODULE
+                        ? (QualifiedNameable)classElement.getEnclosingElement()
+                        : (QualifiedNameable)getPackageElement(classElement).getEnclosingElement();
                     try {
-                        outLocn = fileManager.getLocationForModule(StandardLocation.CLASS_OUTPUT, msym.getQualifiedName().toString());
+                        outLocn = fileManager.getLocationForModule(StandardLocation.CLASS_OUTPUT, moduleElement.getQualifiedName().toString());
                     } catch (IOException e1) {
                         throw new UncheckedIOException(e1);
                     }
