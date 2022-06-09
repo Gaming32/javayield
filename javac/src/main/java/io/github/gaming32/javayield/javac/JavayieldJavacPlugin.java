@@ -89,9 +89,11 @@ public class JavayieldJavacPlugin implements Plugin {
                         ? (QualifiedNameable)classElement.getEnclosingElement()
                         : (QualifiedNameable)getPackageElement(classElement).getEnclosingElement();
                     try {
-                        outLocn = fileManager.getLocationForModule(StandardLocation.CLASS_OUTPUT, moduleElement.getQualifiedName().toString());
-                    } catch (IOException e1) {
-                        throw new UncheckedIOException(e1);
+                        outLocn = (Location)
+                            fileManager.getClass().getDeclaredMethod("getLocationForModule", Location.class, String.class)
+                                .invoke(fileManager, StandardLocation.CLASS_OUTPUT, moduleElement.getQualifiedName().toString());
+                    } catch (Exception e1) {
+                        throw new RuntimeException(e1);
                     }
                 } else {
                     outLocn = StandardLocation.CLASS_OUTPUT;
