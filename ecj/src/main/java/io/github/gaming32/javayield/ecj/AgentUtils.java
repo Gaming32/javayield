@@ -2,14 +2,12 @@ package io.github.gaming32.javayield.ecj;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 
 import io.github.gaming32.javayield.transform.YieldTransformer;
 
 public class AgentUtils {
     public static byte[] maybeTransform(byte[] inputBytes) {
-        try (FileWriter fw = new FileWriter("test13")) {} catch (Exception e) {}
         final byte[] outputBytes = YieldTransformer.transformClass(inputBytes);
         return outputBytes != null ? outputBytes : inputBytes;
     }
