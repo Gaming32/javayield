@@ -23,6 +23,7 @@ public class TransformTest {
 
         testClass = testSingle("JavayieldIjTest", true);
         testClass = testSingle("ResultTest", true);
+        testClass = testSingle("SendTest", true);
     }
 
     private Class<?> testSingle(String className, boolean mainClass) throws Exception {

@@ -24,7 +24,11 @@ public final class Yield {
         throw didntInstrument("yieldAll(Iterator<T>)");
     }
 
-    public static <E, R> GeneratorIterator<E, R> result(R result) {
+    public static <E, S, R> GeneratorIterator<E, S, R> result(R result) {
         throw didntInstrument("result(R)");
+    }
+
+    public static Object sent() {
+        throw didntInstrument("sent()");
     }
 }

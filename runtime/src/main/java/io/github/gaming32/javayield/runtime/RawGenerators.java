@@ -1,6 +1,6 @@
 package io.github.gaming32.javayield.runtime;
 
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 public final class RawGenerators {
     public static final CompletedGenerator<?> COMPLETE = new CompletedGenerator<>(null);
@@ -8,15 +8,15 @@ public final class RawGenerators {
     private RawGenerators() {
     }
 
-    public static <E, R> GeneratorIterator<E, R> createIteratorGenerator(Supplier<Object> gen) {
+    public static <E, S, R> GeneratorIterator<E, S, R> createIteratorGenerator(Function<Object, S> gen) {
         return new GeneratorIterator<>(gen);
     }
 
-    public static <E> Iterable<E> createIterableGenerator(Supplier<Object> gen) {
+    public static <E> Iterable<E> createIterableGenerator(Function<Object, ?> gen) {
         return new IterableFromIterator<>(new GeneratorIterator<>(gen));
     }
 
-    public static <E, R> Supplier<Object> unwrap(GeneratorIterator<E, R> it) {
+    public static <E, S, R> Function<Object, S> unwrap(GeneratorIterator<E, S, R> it) {
         return it.fn;
     }
 

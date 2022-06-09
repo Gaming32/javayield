@@ -2,14 +2,15 @@ package io.github.gaming32.javayield.runtime;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
-public final class GeneratorIterator<E, R> implements Iterator<E> {
-    final Supplier<Object> fn;
+public final class GeneratorIterator<E, S, R> implements Iterator<E> {
+    final Function<Object, S> fn;
+    private S sent;
     private boolean valueReady;
     private Object next;
 
-    public GeneratorIterator(Supplier<Object> fn) {
+    public GeneratorIterator(Function<Object, S> fn) {
         this.fn = fn;
     }
 
@@ -19,7 +20,8 @@ public final class GeneratorIterator<E, R> implements Iterator<E> {
             if (next instanceof CompletedGenerator) {
                 return false;
             }
-            next = fn.get();
+            next = fn.apply(sent);
+            sent = null;
             valueReady = !(next instanceof CompletedGenerator);
         }
         return valueReady;
@@ -31,7 +33,8 @@ public final class GeneratorIterator<E, R> implements Iterator<E> {
             if (next instanceof CompletedGenerator) {
                 throw new NoSuchElementException();
             }
-            next = fn.get();
+            next = fn.apply(sent);
+            sent = null;
             if (next instanceof CompletedGenerator) {
                 throw new NoSuchElementException();
             }
@@ -41,6 +44,11 @@ public final class GeneratorIterator<E, R> implements Iterator<E> {
         valueReady = false;
         next = null;
         return value;
+    }
+
+    public GeneratorIterator<E, S, R> send(S sent) {
+        this.sent = sent;
+        return this;
     }
 
     @SuppressWarnings("unchecked")

@@ -33,8 +33,8 @@ import org.objectweb.asm.tree.VarInsnNode;
 
 public final class YieldTransformer {
     private static final Type OBJECT_TYPE = Type.getObjectType("java/lang/Object");
-    private static final Type SUPPLIER_OBJECT_TYPE = Type.getObjectType("java/util/function/Supplier");
-    private static final Type SUPPLIER_METHOD_TYPE = Type.getMethodType(OBJECT_TYPE);
+    private static final Type FUNCTION_OBJECT_TYPE = Type.getObjectType("java/util/function/Function");
+    private static final Type FUNCTION_METHOD_TYPE = Type.getMethodType(OBJECT_TYPE, OBJECT_TYPE);
     private static final Type ITERATOR_ARRAY_TYPE = Type.getType("[Ljava/util/Iterator;");
 
     private YieldTransformer() {
@@ -84,7 +84,8 @@ public final class YieldTransformer {
         final boolean hasYieldAll = (yieldCountInfo & 1) != 0;
         if (hasYieldAll) {
             varTypes = Arrays.copyOf(varTypes, varTypes.length + 1);
-            varTypes[varTypes.length - 1] = ITERATOR_ARRAY_TYPE;
+            varTypes[varTypes.length - 2] = ITERATOR_ARRAY_TYPE;
+            varTypes[varTypes.length - 1] = OBJECT_TYPE;
         }
         final Type internalGeneratorType = Type.getMethodType(OBJECT_TYPE, varTypes);
         final MethodNode newMethod = (MethodNode)classNode.visitMethod(
@@ -104,12 +105,14 @@ public final class YieldTransformer {
             newMethod.visitLocalVariable(name, desc, null, start, start, i);
             newMethod.visitParameter(name, Opcodes.ACC_FINAL);
         }
-        newMethod.visitLocalVariable("$state", "[I", null, start, start, varTypes.length - (hasYieldAll ? 2 : 1));
+        newMethod.visitLocalVariable("$state", "[I", null, start, start, varTypes.length - (hasYieldAll ? 3 : 2));
         newMethod.visitParameter("$state", Opcodes.ACC_FINAL | Opcodes.ACC_SYNTHETIC);
         if (hasYieldAll) {
-            newMethod.visitLocalVariable("$yieldAll", "[Ljava/util/Iterator;", null, start, start, varTypes.length - 1);
+            newMethod.visitLocalVariable("$yieldAll", "[Ljava/util/Iterator;", null, start, start, varTypes.length - 2);
             newMethod.visitParameter("$yieldAll", Opcodes.ACC_FINAL | Opcodes.ACC_SYNTHETIC);
         }
+        newMethod.visitLocalVariable("$sent", "Ljava/lang/Object;", null, start, start, varTypes.length - 1);
+        newMethod.visitParameter("$sent", Opcodes.ACC_FINAL | Opcodes.ACC_SYNTHETIC);
         transformMethod0(newMethod, varTypes, yieldCountInfo);
         method.visitCode();
         if (lineNumber != -1) {
@@ -135,7 +138,7 @@ public final class YieldTransformer {
                 method.visitInsn(argTypes[i].getOpcode(Opcodes.IASTORE));
             }
         }
-        final int varTypesEndOffset = hasYieldAll ? 2 : 1;
+        final int varTypesEndOffset = hasYieldAll ? 3 : 2;
         for (int i = effectivelyFinal.length + argOffset; i < varTypes.length - varTypesEndOffset; i++) {
             final String descriptor = varTypes[i].getDescriptor().substring(1); // Remove the [
             iconst(method, 1);
@@ -154,8 +157,8 @@ public final class YieldTransformer {
             method.visitTypeInsn(Opcodes.ANEWARRAY, "java/util/Iterator");
         }
         method.visitInvokeDynamicInsn(
-            "get",
-            Type.getMethodDescriptor(SUPPLIER_OBJECT_TYPE, varTypes),
+            "apply",
+            Type.getMethodDescriptor(FUNCTION_OBJECT_TYPE, Arrays.copyOf(varTypes, varTypes.length - 1)), // Remove $sent
             new Handle(
                 Opcodes.H_INVOKESTATIC,
                 "java/lang/invoke/LambdaMetafactory",
@@ -164,7 +167,7 @@ public final class YieldTransformer {
                 false
             ),
             new Object[] {
-                SUPPLIER_METHOD_TYPE,
+                FUNCTION_METHOD_TYPE,
                 new Handle(
                     Opcodes.H_INVOKESTATIC,
                     classNode.name,
@@ -172,7 +175,7 @@ public final class YieldTransformer {
                     internalGeneratorType.getDescriptor(),
                     (classNode.access & Opcodes.ACC_INTERFACE) != 0
                 ),
-                SUPPLIER_METHOD_TYPE
+                FUNCTION_METHOD_TYPE
             }
         );
         if (Type.getReturnType(method.desc).getInternalName().equals("java/lang/Iterable")) {
@@ -180,7 +183,7 @@ public final class YieldTransformer {
                 Opcodes.INVOKESTATIC,
                 "io/github/gaming32/javayield/runtime/RawGenerators",
                 "createIterableGenerator",
-                "(Ljava/util/function/Supplier;)Ljava/lang/Iterable;",
+                "(Ljava/util/function/Function;)Ljava/lang/Iterable;",
                 false
             );
         } else {
@@ -188,7 +191,7 @@ public final class YieldTransformer {
                 Opcodes.INVOKESTATIC,
                 "io/github/gaming32/javayield/runtime/RawGenerators",
                 "createIteratorGenerator",
-                "(Ljava/util/function/Supplier;)Lio/github/gaming32/javayield/runtime/GeneratorIterator;",
+                "(Ljava/util/function/Function;)Lio/github/gaming32/javayield/runtime/GeneratorIterator;",
                 false
             );
         }
@@ -272,7 +275,7 @@ public final class YieldTransformer {
     private static void transformMethod0(MethodNode method, Type[] varTypes, int yieldCountInfo) {
         final boolean hasYieldAll = (yieldCountInfo & 1) != 0;
         final int yieldCount = yieldCountInfo >> 1;
-        final int stateVarIndex = varTypes.length - (hasYieldAll ? 2 : 1);
+        final int stateVarIndex = varTypes.length - (hasYieldAll ? 3 : 2);
         final ListIterator<AbstractInsnNode> it = method.instructions.iterator();
         final LabelNode[] stateLabels = new LabelNode[yieldCount + 2];
         for (int i = 0; i < stateLabels.length; i++) {
@@ -323,34 +326,36 @@ public final class YieldTransformer {
             }
             if (insn.getOpcode() != Opcodes.INVOKESTATIC) continue;
             final MethodInsnNode methodInsn = (MethodInsnNode)insn;
-            boolean isYieldAll = false;
-            if (
-                methodInsn.owner.equals("io/github/gaming32/javayield/api/Yield") &&
-                (methodInsn.name.equals("yield_") || (isYieldAll = methodInsn.name.equals("yieldAllProxy")))
-            ) {
-                it.remove();
-                final int state = currentYield++;
-                if (isYieldAll) {
-                    // Store the Iterator for future use
-                    it.previous();
-                    it.add(new VarInsnNode(Opcodes.ALOAD, varTypes.length - 1));
-                    it.add(new InsnNode(Opcodes.SWAP));
+            if (methodInsn.owner.equals("io/github/gaming32/javayield/api/Yield")) {
+                boolean isYieldAll = false;
+                if (methodInsn.name.equals("yield_") || (isYieldAll = methodInsn.name.equals("yieldAllProxy"))) {
+                    it.remove();
+                    final int state = currentYield++;
+                    if (isYieldAll) {
+                        // Store the Iterator for future use
+                        it.previous();
+                        it.add(new VarInsnNode(Opcodes.ALOAD, varTypes.length - 2));
+                        it.add(new InsnNode(Opcodes.SWAP));
+                        it.add(iconst(0));
+                        it.add(new InsnNode(Opcodes.SWAP));
+                        it.add(new InsnNode(Opcodes.AASTORE));
+                        it.next();
+                    }
+                    it.add(new VarInsnNode(Opcodes.ALOAD, stateVarIndex));
                     it.add(iconst(0));
-                    it.add(new InsnNode(Opcodes.SWAP));
-                    it.add(new InsnNode(Opcodes.AASTORE));
-                    it.next();
-                }
-                it.add(new VarInsnNode(Opcodes.ALOAD, stateVarIndex));
-                it.add(iconst(0));
-                it.add(iconst(state));
-                it.add(new InsnNode(Opcodes.IASTORE));
-                it.add(new InsnNode(Opcodes.ARETURN));
-                it.add(stateLabels[state]);
-                if (isYieldAll) {
-                    // Recover the iterator
+                    it.add(iconst(state));
+                    it.add(new InsnNode(Opcodes.IASTORE));
+                    it.add(new InsnNode(Opcodes.ARETURN));
+                    it.add(stateLabels[state]);
+                    if (isYieldAll) {
+                        // Recover the iterator
+                        it.add(new VarInsnNode(Opcodes.ALOAD, varTypes.length - 2));
+                        it.add(iconst(0));
+                        it.add(new InsnNode(Opcodes.AALOAD));
+                    }
+                } else if (methodInsn.name.equals("sent")) {
+                    it.remove();
                     it.add(new VarInsnNode(Opcodes.ALOAD, varTypes.length - 1));
-                    it.add(iconst(0));
-                    it.add(new InsnNode(Opcodes.AALOAD));
                 }
             }
         }
@@ -369,7 +374,7 @@ public final class YieldTransformer {
             throw new IllegalArgumentException("Yield transformer depends on LVT");
         }
         // final Map<AbstractInsnNode, Integer> stackHeights = calculateStackHeights(method);
-        final Type[] varTypes = new Type[method.localVariables.size() + 1];
+        final Type[] varTypes = new Type[method.localVariables.size() + 2];
         method.localVariables.sort((a, b) -> a.index - b.index);
         int i = 0;
         final int argOffset;
@@ -392,7 +397,8 @@ public final class YieldTransformer {
             varTypes[i] = Type.getType("[" + rewriteVariable(method, i, null).getDescriptor());
             i++;
         }
-        varTypes[i++] = Type.getType("[I");
+        varTypes[i++] = Type.getType("[I"); // $state
+        varTypes[i++] = OBJECT_TYPE; // $sent
         return varTypes;
     }
 
