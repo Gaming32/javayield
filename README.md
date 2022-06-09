@@ -4,6 +4,10 @@ Javayield is a library that adds generator functions to Java.
 
 ## Setup
 
+### Javac
+
+Simply run Javac with the following additional parameters: `-cp "/path/to/javayield-javac.jar" -Xplugin:javayield`.
+
 ### Maven
 
 Simply add this to your `pom.xml`:
@@ -41,9 +45,6 @@ Simply add this to your `pom.xml`:
 
 ### Gradle
 
-**Currently Gradle support doesn't work for some reason. We are investigating the issue.**
-
-<!--
 ```gradle
 dependencies {
     compileOnly('io.github.gaming32.javayield:javayield-javac:1.0-SNAPSHOT') {
@@ -56,7 +57,7 @@ compileJava {
     options.compilerArgs += ['-Xplugin:javayield']
 }
 ```
--->
+
 
 ### IntelliJ
 
